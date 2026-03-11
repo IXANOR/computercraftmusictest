@@ -20,20 +20,18 @@ end
 print("Pobieram:")
 print(url)
 
-local ok = shell.run("wget", url, tmp)
-if not ok then
-  print("Nie udalo sie pobrac pliku.")
+shell.run("wget", url, tmp)
+
+if not fs.exists(tmp) then
+  print("Plik nie zostal pobrany.")
   return
 end
 
 print("Zapisuje na kasete...")
-local wrote = shell.run("tape", "write", tmp)
+shell.run("tape", "write", tmp)
 
-fs.delete(tmp)
-
-if not wrote then
-  print("Nie udalo sie zapisac kasety.")
-  return
+if fs.exists(tmp) then
+  fs.delete(tmp)
 end
 
 print("Gotowe.")
