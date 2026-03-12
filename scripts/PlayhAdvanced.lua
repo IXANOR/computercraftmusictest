@@ -165,6 +165,31 @@ local function advanceToNextTape()
     sortchest(c)
     activeTapeLabel = nil
 end
+local function advanceToPreviousTape()
+    local listBefore = c.list()
+    if not next(listBefore) then
+        s.seek(-s.getPosition())
+        return
+    end
+    s.seek(-s.getSize())
+    moveOut()
+    sortchest(c)
+    local list = c.list()
+    local lastSlot = nil
+    for i = c.size(), 1, -1 do
+        if list[i] then
+            lastSlot = i
+            break
+        end
+    end
+    if lastSlot then
+        moveIn(lastSlot)
+        s.seek(-s.getSize())
+        b.sliderHor("setdb", 2, 32)
+        sortchest(c)
+        activeTapeLabel = nil
+    end
+end
 ---periph check---
 if not m then
     error("you are missing a monitor", 0)
@@ -223,6 +248,14 @@ local function basemain()
                 advanceToNextTape()
             end
             moveIn(1)
+        end
+        m.setBackgroundColor(colors.green)
+        if b.button(mname, click, 52, 4, "PREVIOUS") then
+            advanceToPreviousTape()
+        end
+        m.setBackgroundColor(colors.green)
+        if b.button(mname, click, 64, 4, "NEXT") then
+            advanceToNextTape()
         end
         b.switch(mname, 3, click, 68, 8, "red", "green", "white", "PLAY")
         if b.switch("db", 3) then
