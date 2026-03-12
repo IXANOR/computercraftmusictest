@@ -9,8 +9,25 @@ local folder = args[1]
 local num = tonumber(args[2]) or 1
 local label = folder:gsub("/+$", ""):match("([^/]+)$") or folder
 local tapeMetadataFile = "./musicdata/tape_metadata"
+local durationLabelToken = "|d="
 local function normalizeDurationKey(name)
   return (name or ""):lower():gsub("[^%w]", "")
+end
+local function getBaseLabel(name)
+  if not name or name == "" then
+    return "UnTitled"
+  end
+  local base = name:match("^(.-)|d=%d+$")
+  if base ~= nil then
+    if base == "" then
+      return "UnTitled"
+    end
+    return base
+  end
+  return name
+end
+local function buildLabelWithDuration(name, duration)
+  return getBaseLabel(name) .. durationLabelToken .. math.floor(duration)
 end
 
 local function loadTapeMetadata()
@@ -91,12 +108,11 @@ end
 
 file.close()
 
-drive.seek(-drive.getSize())
-drive.setLabel(label)
-
 local metadata = loadTapeMetadata()
 local duration = math.floor(bytesWritten / 6000)
 if duration > 0 then
+  drive.seek(-drive.getSize())
+  drive.setLabel(buildLabelWithDuration(label, duration))
   metadata[label] = duration
   metadata[normalizeDurationKey(label)] = duration
   if saveTapeMetadata(metadata) then
@@ -107,6 +123,8 @@ if duration > 0 then
     print("Nie udalo sie zapisac metadanych dlugosci.")
   end
 else
+  drive.seek(-drive.getSize())
+  drive.setLabel(getBaseLabel(label))
   print("Nie udalo sie wyliczyc dlugosci utworu.")
 end
 

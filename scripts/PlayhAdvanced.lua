@@ -51,14 +51,42 @@ local tapeDurations = {}
 local activeTapeDuration = nil
 local activeTapeSlot = nil
 local activeTapeLabel = nil
+local durationLabelToken = "|d="
 local function normalizeDurationKey(name)
     return (name or ""):lower():gsub("[^%w]", "")
 end
-local function normalizeTapeLabel(label)
+local function getDurationFromLabel(label)
+    if not label or label == "" then
+        return nil
+    end
+    local duration = tonumber(label:match("|d=(%d+)$"))
+    if duration and duration > 0 then
+        return duration
+    end
+    return nil
+end
+local function getBaseLabel(label)
     if not label or label == "" then
         return "UnTitled"
     end
+    local base = label:match("^(.-)|d=%d+$")
+    if base ~= nil then
+        if base == "" then
+            return "UnTitled"
+        end
+        return base
+    end
     return label
+end
+local function buildLabelWithDuration(baseLabel, duration)
+    local base = getBaseLabel(baseLabel)
+    if duration and duration > 0 then
+        return base .. durationLabelToken .. math.floor(duration)
+    end
+    return base
+end
+local function normalizeTapeLabel(label)
+    return getBaseLabel(label)
 end
 local function loadTapeDurations()
     if not fs.exists(tapeMetadataFile) then
@@ -106,7 +134,12 @@ local function parseDurationInput(input)
     return nil
 end
 local function getCurrentTapeDuration()
-    local label = normalizeTapeLabel(s.getLabel())
+    local rawLabel = s.getLabel()
+    local label = normalizeTapeLabel(rawLabel)
+    local labelDuration = getDurationFromLabel(rawLabel)
+    if labelDuration then
+        return labelDuration
+    end
     local duration = tapeDurations[label]
     if not duration then
         duration = tapeDurations[normalizeDurationKey(label)]
@@ -227,11 +260,12 @@ local function basemain()
     end
     m.setCursorPos(50, 38)
     m.write("clocks:" .. timers1 .. "|" .. timers2)
-    local label = s.getLabel()
+    local rawLabel = s.getLabel()
+    local label = normalizeTapeLabel(rawLabel)
     m.setCursorPos(33, 8)
     m.setBackgroundColor(colors.blue)
     m.setTextColor(colors.black)
-    if label ~= nil then
+    if rawLabel ~= nil then
         if label ~= "" then
             bf.writeOn(m, 1, label, 30, 7)
         else
@@ -298,7 +332,7 @@ local function basemain()
             m.write(string.rep("\131", 15), m.getSize())
             m.setCursorPos(1, 1)
             m.setBackgroundColor(colors.blue)
-            local label = s.getLabel()
+            local label = normalizeTapeLabel(s.getLabel())
             if label == "" then
                 label = "UnTitled"
             end
@@ -618,6 +652,7 @@ function setTape(disk, position)
     bf.writeOn(m, 1, "continue in terminal")
     moveOut()
     moveIn(position)
+    local currentDuration = getDurationFromLabel(s.getLabel())
     term.clear()
     term.setCursorPos(1, 1)
     local ins = "placeHolderInHereIsPlaceholder!"
@@ -631,7 +666,7 @@ function setTape(disk, position)
             term.setCursorPos(1, 1)
         end
     end
-    s.setLabel(ins)
+    s.setLabel(buildLabelWithDuration(ins, currentDuration))
     moveOut()
     term.clear()
     term.setCursorPos(1, 1)
@@ -640,10 +675,16 @@ end
 function setTapeDuration(disk, position)
     b.frame(mname, 3, 19, 75, 17, "white", "blue")
     bf.writeOn(m, 1, "continue in terminal")
+    moveOut()
+    moveIn(position)
     term.clear()
     term.setCursorPos(1, 1)
-    local label = normalizeTapeLabel(disk)
-    local current = tapeDurations[label]
+    local rawLabel = s.getLabel()
+    local label = normalizeTapeLabel(rawLabel or disk)
+    local current = getDurationFromLabel(rawLabel)
+    if not current then
+        current = tapeDurations[label]
+    end
     print("Set song duration for tape label: " .. label)
     if current then
         local cstr = ("%02d:%02d"):format(math.floor(current / 60), current % 60)
@@ -658,13 +699,17 @@ function setTapeDuration(disk, position)
     if input == "" then
         print("Cancelled. Previous metadata was kept.")
     elseif string.lower(input) == "clear" then
+        s.setLabel(buildLabelWithDuration(label, nil))
         tapeDurations[label] = nil
+        tapeDurations[normalizeDurationKey(label)] = nil
         saveTapeDurations()
         print("Duration metadata removed.")
     else
         local seconds = parseDurationInput(input)
         if seconds then
+            s.setLabel(buildLabelWithDuration(label, seconds))
             tapeDurations[label] = seconds
+            tapeDurations[normalizeDurationKey(label)] = seconds
             saveTapeDurations()
             local mstr = ("%02d:%02d"):format(math.floor(seconds / 60), seconds % 60)
             print("Saved duration: " .. mstr .. " (" .. seconds .. "s)")
@@ -672,6 +717,7 @@ function setTapeDuration(disk, position)
             print("Invalid format. Metadata was not changed.")
         end
     end
+    moveOut()
     sleep(1.5)
     term.clear()
     term.setCursorPos(1, 1)
@@ -785,7 +831,7 @@ local function updateplaylist()
             funcs[i] = function()
                 local meta = c.getItemMeta(i)
                 if meta then
-                    objects[i] = meta.media.label
+                    objects[i] = normalizeTapeLabel(meta.media.label)
                     if objects[i] == "" then
                         objects[i] = "UnTitled"
                     end
