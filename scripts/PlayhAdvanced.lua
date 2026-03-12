@@ -346,6 +346,11 @@ function actions(disk, position)
         bf.writeOn(m, 1, disk, nil, 12)
     end
     local function confirmAction(title)
+        local cancelX, cancelY, cancelW = 24, 20, 12
+        local confirmX, confirmY, confirmW = 42, 20, 13
+        local function inRect(x, y, rx, ry, rw)
+            return y == ry and x >= rx and x <= (rx + rw - 1)
+        end
         while true do
             b.frame(mname, 3, 19, 75, 17, "white", "blue")
             m.setBackgroundColor(colors.black)
@@ -354,17 +359,23 @@ function actions(disk, position)
             m.write("confirm action for: " .. disk)
             m.setBackgroundColor(colors.orange)
             bf.writeOn(m, 1, title, nil, 12)
-            local click = b.timetouch(1, mname)
             m.setBackgroundColor(colors.red)
-            local cancel = b.button(mname, click, 28, 16, "CANCEL")
+            m.setTextColor(colors.white)
+            m.setCursorPos(cancelX, cancelY)
+            m.write("   CANCEL   ")
             m.setBackgroundColor(colors.green)
-            local confirm = b.button(mname, click, 45, 16, "CONFIRM")
-            if cancel then
-                drawActionScreen()
-                return false
-            end
-            if confirm then
-                return true
+            m.setTextColor(colors.black)
+            m.setCursorPos(confirmX, confirmY)
+            m.write("   CONFIRM   ")
+            local ev, side, x, y = os.pullEvent("monitor_touch")
+            if ev == "monitor_touch" and side == mname then
+                if inRect(x, y, cancelX, cancelY, cancelW) then
+                    drawActionScreen()
+                    return false
+                end
+                if inRect(x, y, confirmX, confirmY, confirmW) then
+                    return true
+                end
             end
         end
     end
