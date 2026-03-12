@@ -257,7 +257,7 @@ local function basemain()
         if b.button(mname, click, 64, 4, "NEXT") then
             advanceToNextTape()
         end
-        b.switch(mname, 3, click, 68, 8, "red", "green", "white", "PLAY")
+        b.switch(mname, 3, click, 28, 4, "red", "green", "white", "PLAY")
         if b.switch("db", 3) then
             b.switch("setdb", 3, s.play())
         else
@@ -278,7 +278,7 @@ local function basemain()
         end
         m.setTextColor(colors.white)
         m.setBackgroundColor(colors.orange)
-        if b.button(mname, click, 63, 7, "EJECT TAPE") then
+        if b.button(mname, click, 40, 4, "EJECT TAPE") then
             s.seek(-s.getSize())
             moveOut()
             short = os.startTimer(shortspeed)
@@ -912,7 +912,7 @@ local function getClick()
     click = b.timetouch(updaterate, mname)
     if firsst then
 		firsst = false
-		b.switch(mname, 3, click, 68, 8, "red", "green", "white", "PLAY")
+		b.switch(mname, 3, click, 28, 4, "red", "green", "white", "PLAY")
 		b.switch(mname, 2, click, 17, 4, "red", "green", "white", "shuffle")
 		b.sliderHor(mname, click, 1, 33, 13, 38, "blue", "white")
 		if autostartPlay then b.switch("setdb",3,true) end
