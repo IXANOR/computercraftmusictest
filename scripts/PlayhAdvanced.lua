@@ -140,7 +140,7 @@ m.setTextColor(colors.white)
 m.setTextScale(0.5)
 b.frame(mname, 5, 17, 71, 10, "white", "blue")
 m.setBackgroundColor(colors.blue)
-bf.writeOn(m, 2, "PlayHAdvanced", nil, 10)
+bf.writeOn(m, 2, "PlayHAdv", nil, 10)
 m.setTextColor(colors.black)
 bf.writeOn(m, 1, "Music player program", 10, 19)
 bf.writeOn(m, 1, "by KamilSlimak", nil, 22)
@@ -151,7 +151,7 @@ local function setup()
     m.setCursorPos(1, 37)
     m.write(string.rep("\140", 100))
     m.setCursorPos(1, 38)
-    m.write("\169" .. " PlayHAdvanced | copyright 2138   KamilSlimak")
+    m.write("\169" .. " PlayHAdvanced | copyright 2137   KamilSlimak")
     b.frame(mname, 3, 19, 75, 17, "white", "black")
     b.frame(mname, 6, 20, 20, 15, "white", "blue")
     b.frame(mname, 30, 20, 45, 15, "white", "blue")
@@ -406,7 +406,7 @@ function actions(disk, position)
             end
         end
         m.setBackgroundColor(colors.green)
-        if b.button(mname, click, 49, 17, "PLAY") then
+        if b.button(mname, click, 36, 20, "      PLAY      ") then
             playtape(disk, position)
             setup()
             break
@@ -419,7 +419,7 @@ function actions(disk, position)
                 break
             end
         end
-        m.setBackgroundColor(colors.lightBlue)
+        m.setBackgroundColor(colors.green)
         if b.button(mname, click, 46, 19, "SET LENGTH") then
             if confirmAction("SET LENGTH") then
                 setTapeDuration(disk, position)
