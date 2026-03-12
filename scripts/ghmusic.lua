@@ -9,6 +9,9 @@ local folder = args[1]
 local num = tonumber(args[2]) or 1
 local label = folder:gsub("/+$", ""):match("([^/]+)$") or folder
 local tapeMetadataFile = "./musicdata/tape_metadata"
+local function normalizeDurationKey(name)
+  return (name or ""):lower():gsub("[^%w]", "")
+end
 
 local function loadTapeMetadata()
   if not fs.exists(tapeMetadataFile) then
@@ -95,6 +98,7 @@ local metadata = loadTapeMetadata()
 local duration = math.floor(bytesWritten / 6000)
 if duration > 0 then
   metadata[label] = duration
+  metadata[normalizeDurationKey(label)] = duration
   if saveTapeMetadata(metadata) then
     local min = math.floor(duration / 60)
     local sec = duration % 60

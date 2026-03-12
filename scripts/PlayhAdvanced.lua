@@ -51,6 +51,9 @@ local tapeDurations = {}
 local activeTapeDuration = nil
 local activeTapeSlot = nil
 local activeTapeLabel = nil
+local function normalizeDurationKey(name)
+    return (name or ""):lower():gsub("[^%w]", "")
+end
 local function normalizeTapeLabel(label)
     if not label or label == "" then
         return "UnTitled"
@@ -105,6 +108,16 @@ end
 local function getCurrentTapeDuration()
     local label = normalizeTapeLabel(s.getLabel())
     local duration = tapeDurations[label]
+    if not duration then
+        duration = tapeDurations[normalizeDurationKey(label)]
+    end
+    if type(duration) ~= "number" or duration <= 0 then
+        loadTapeDurations()
+        duration = tapeDurations[label]
+        if not duration then
+            duration = tapeDurations[normalizeDurationKey(label)]
+        end
+    end
     if type(duration) == "number" and duration > 0 then
         return duration
     end
@@ -151,7 +164,7 @@ local function setup()
     m.setCursorPos(1, 37)
     m.write(string.rep("\140", 100))
     m.setCursorPos(1, 38)
-    m.write("\169" .. " PlayHAdvanced | copyright 2138   KamilSlimak")
+    m.write("\169" .. " PlayHAdvanced | copyright 2137   KamilSlimak")
     b.frame(mname, 3, 19, 75, 17, "white", "black")
     b.frame(mname, 6, 20, 20, 15, "white", "blue")
     b.frame(mname, 30, 20, 45, 15, "white", "blue")
@@ -837,6 +850,7 @@ timers2 = 0
 counts = 0
 local function timers()
     if event == long then
+        loadTapeDurations()
         updateplaylist()
         timers1 = timers1 + 1
         if not start then
@@ -857,16 +871,16 @@ local function timers()
             end
         end
         parallel.waitForAll(basemain, getClick)
-        if (not b.switch("db", 1)) and s.getState() == "PLAYING" then
+        if (not b.switch("db", 1)) then
             local currentLabel = normalizeTapeLabel(s.getLabel())
             if currentLabel ~= activeTapeLabel then
                 activeTapeLabel = currentLabel
                 activeTapeDuration = getCurrentTapeDuration()
             end
-            if s.isEnd() then
+            if b.switch("db", 3) and s.isEnd() then
                 advanceToNextTape()
                 activeTapeDuration = nil
-            elseif activeTapeDuration then
+            elseif b.switch("db", 3) and activeTapeDuration then
                 local currentSecond = math.floor(s.getPosition() / 6000)
                 if currentSecond >= activeTapeDuration then
                     advanceToNextTape()
