@@ -354,22 +354,16 @@ function actions(disk, position)
             m.write("confirm action for: " .. disk)
             m.setBackgroundColor(colors.orange)
             bf.writeOn(m, 1, title, nil, 12)
-            m.setBackgroundColor(colors.red)
-            m.setTextColor(colors.white)
-            m.setCursorPos(28, 20)
-            m.write(" CANCEL ")
-            m.setBackgroundColor(colors.green)
-            m.setTextColor(colors.black)
-            m.setCursorPos(45, 20)
-            m.write(" CONFIRM ")
             local click = b.timetouch(1, mname)
             m.setBackgroundColor(colors.red)
-            if b.button(mname, click, 28, 20, "CANCEL") then
+            local cancel = b.button(mname, click, 28, 16, "CANCEL")
+            m.setBackgroundColor(colors.green)
+            local confirm = b.button(mname, click, 45, 16, "CONFIRM")
+            if cancel then
                 drawActionScreen()
                 return false
             end
-            m.setBackgroundColor(colors.green)
-            if b.button(mname, click, 45, 20, "CONFIRM") then
+            if confirm then
                 return true
             end
         end
