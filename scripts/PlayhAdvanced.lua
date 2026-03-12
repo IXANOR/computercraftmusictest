@@ -1,4 +1,4 @@
--------PlayHAdvanced music player program by KamilŚlimak-------
+-------PlayHAdvanced music player program by KamilSlimak-------
 -----------configuration------------
 local infoscreens = {
 	--example: ["top"] = true,
@@ -26,7 +26,7 @@ if arg then
     return
 end
 if not fs.exists("button") then
-    shell.run("pastebin get LTDZZZEJ ./button") --API by KamilŚlimak
+    shell.run("pastebin get LTDZZZEJ ./button") --API by KamilSlimak
 end
 if not fs.exists("bigfont") then
     shell.run("pastebin get 3LfWxRWh ./bigfont") --API by Wojbie
@@ -143,7 +143,7 @@ m.setBackgroundColor(colors.blue)
 bf.writeOn(m, 2, "PlayHAdvanced", nil, 10)
 m.setTextColor(colors.black)
 bf.writeOn(m, 1, "Music player program", 10, 19)
-bf.writeOn(m, 1, "by KamilŚlimak", nil, 22)
+bf.writeOn(m, 1, "by KamilSlimak", nil, 22)
 bf.writeOn(m, 1, "loading", 1, 2)
 ----------base functions----------
 local funcs = {}
@@ -151,7 +151,7 @@ local function setup()
     m.setCursorPos(1, 37)
     m.write(string.rep("\140", 100))
     m.setCursorPos(1, 38)
-    m.write("\169" .. " PlayHAdvanced | copyright 2137   KamilŚlimak")
+    m.write("\169" .. " PlayHAdvanced | copyright 2137   KamilSlimak")
     b.frame(mname, 3, 19, 75, 17, "white", "black")
     b.frame(mname, 6, 20, 20, 15, "white", "blue")
     b.frame(mname, 30, 20, 45, 15, "white", "blue")
@@ -335,14 +335,38 @@ local function loadbar(ins, max)
     b.bar(mname, 5, 22, 71, 13, ins, max, "gray", "cyan", "white", false, false, "", false, true, false)
 end
 function actions(disk, position)
-    m.setBackgroundColor(colors.black)
-    m.setTextColor(colors.white)
-    b.frame(mname, 3, 19, 75, 17, "white", "blue")
-    m.setCursorPos(20, 10)
-    m.setBackgroundColor(colors.green)
-    m.write("what action do you want to perform with")
-    m.setBackgroundColor(colors.lightBlue)
-    bf.writeOn(m, 1, disk, nil, 12)
+    local function drawActionScreen()
+        m.setBackgroundColor(colors.black)
+        m.setTextColor(colors.white)
+        b.frame(mname, 3, 19, 75, 17, "white", "blue")
+        m.setCursorPos(20, 10)
+        m.setBackgroundColor(colors.green)
+        m.write("what action do you want to perform with")
+        m.setBackgroundColor(colors.lightBlue)
+        bf.writeOn(m, 1, disk, nil, 12)
+    end
+    local function confirmAction(title)
+        while true do
+            b.frame(mname, 3, 19, 75, 17, "white", "blue")
+            m.setBackgroundColor(colors.black)
+            m.setTextColor(colors.white)
+            m.setCursorPos(22, 10)
+            m.write("confirm action for: " .. disk)
+            m.setBackgroundColor(colors.orange)
+            bf.writeOn(m, 1, title, nil, 12)
+            local click = b.timetouch(1, mname)
+            m.setBackgroundColor(colors.red)
+            if b.button(mname, click, 28, 18, "CANCEL") then
+                drawActionScreen()
+                return false
+            end
+            m.setBackgroundColor(colors.green)
+            if b.button(mname, click, 45, 18, "CONFIRM") then
+                return true
+            end
+        end
+    end
+    drawActionScreen()
     while true do
         local click = b.timetouch(1, mname)
         m.setBackgroundColor(colors.red)
@@ -352,17 +376,21 @@ function actions(disk, position)
         end
         m.setBackgroundColor(colors.orange)
         if b.button(mname, click, 34, 17, "WIPE TAPE") then
-            cleartape(disk, position)
-            setup()
-            break
+            if confirmAction("WIPE TAPE") then
+                cleartape(disk, position)
+                setup()
+                break
+            end
         end
         m.setBackgroundColor(colors.orange)
         if b.button(mname, click, 32, 18, "DOWNLOAD SONG") then
-            downloadtape(disk, position)
-            setup()
-            short = os.startTimer(shortspeed)
-            long = os.startTimer(readspeed)
-            break
+            if confirmAction("DOWNLOAD SONG") then
+                downloadtape(disk, position)
+                setup()
+                short = os.startTimer(shortspeed)
+                long = os.startTimer(readspeed)
+                break
+            end
         end
         m.setBackgroundColor(colors.green)
         if b.button(mname, click, 49, 17, "PLAY") then
@@ -372,21 +400,27 @@ function actions(disk, position)
         end
         m.setBackgroundColor(colors.green)
         if b.button(mname, click, 47, 18, "NAME TAPE") then
-            setTape(disk, position)
-            setup()
-            break
+            if confirmAction("NAME TAPE") then
+                setTape(disk, position)
+                setup()
+                break
+            end
         end
         m.setBackgroundColor(colors.lightBlue)
         if b.button(mname, click, 46, 19, "SET LENGTH") then
-            setTapeDuration(disk, position)
-            setup()
-            break
+            if confirmAction("SET LENGTH") then
+                setTapeDuration(disk, position)
+                setup()
+                break
+            end
         end
         m.setBackgroundColor(colors.orange)
         if b.button(mname, click, 34, 19, "LOAD FILE") then
-            loadtape(disk, position)
-            setup()
-            break
+            if confirmAction("LOAD FILE") then
+                loadtape(disk, position)
+                setup()
+                break
+            end
         end
     end
     short = os.startTimer(shortspeed)
@@ -583,11 +617,21 @@ function setTapeDuration(disk, position)
     term.clear()
     term.setCursorPos(1, 1)
     local label = normalizeTapeLabel(disk)
+    local current = tapeDurations[label]
     print("Set song duration for tape label: " .. label)
+    if current then
+        local cstr = ("%02d:%02d"):format(math.floor(current / 60), current % 60)
+        print("Current metadata: " .. cstr .. " (" .. current .. "s)")
+    else
+        print("Current metadata: none")
+    end
     print("Enter seconds (e.g. 215) or mm:ss (e.g. 3:35)")
-    print("Leave empty to remove metadata.")
+    print("Leave empty to cancel and keep current value.")
+    print("Type 'clear' to remove metadata.")
     local input = read()
     if input == "" then
+        print("Cancelled. Previous metadata was kept.")
+    elseif string.lower(input) == "clear" then
         tapeDurations[label] = nil
         saveTapeDurations()
         print("Duration metadata removed.")
