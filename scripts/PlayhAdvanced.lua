@@ -223,7 +223,7 @@ local function setup()
     m.setCursorPos(1, 37)
     m.write(string.rep("\140", 100))
     m.setCursorPos(1, 38)
-    m.write("\169" .. " PlayHAdvanced | copyright 2137/1   KamilSlimak")
+    m.write("\169" .. " PlayHAdvanced | copyright 2137/2   KamilSlimak")
     b.frame(mname, 3, 19, 75, 17, "white", "black")
     b.frame(mname, 6, 20, 20, 15, "white", "blue")
     b.frame(mname, 30, 20, 45, 15, "white", "blue")
@@ -308,8 +308,33 @@ local function basemain()
         local maxpos = s.getSize()
         local curpos = s.getPosition()
         local timemax = math.floor(maxpos / 6000)
+        local labelDuration = getDurationFromLabel(rawLabel) or activeTapeDuration
+        if labelDuration and labelDuration > 0 then
+            timemax = math.min(timemax, labelDuration)
+        end
+        local safeTimemax = math.max(timemax, 1)
         local curtime = math.floor(curpos / 6000)
-        b.bar(mname, 32, 27, 41, 6, curtime + 1, timemax, "gray", "cyan", "black", false, false, "", false, true, false)
+        if curtime > timemax then
+            curtime = timemax
+        end
+        b.bar(
+            mname,
+            32,
+            27,
+            41,
+            6,
+            math.min(curtime + 1, safeTimemax),
+            safeTimemax,
+            "gray",
+            "cyan",
+            "black",
+            false,
+            false,
+            "",
+            false,
+            true,
+            false
+        )
         local curfstr = ("%02d:%02d"):format(curtime / 60, curtime % 60)
         local maxfstr = ("%02d:%02d"):format(timemax / 60, timemax % 60)
         m.setCursorPos(32, 22)
@@ -329,12 +354,12 @@ local function basemain()
         end
         local TIMELINE = b.sliderHor("db", 2)
         if not b.switch("db", 4) then
-            b.sliderHor("setdb", 2, math.floor(curtime / timemax * 38) + 32)
+            b.sliderHor("setdb", 2, math.floor(curtime / safeTimemax * 38) + 32)
             short = os.startTimer(shortspeed)
             long = os.startTimer(readspeed)
         else
             s.seek(-s.getSize())
-            local time = (b.sliderHor("db", 2) - 32) / 38 * timemax
+            local time = (b.sliderHor("db", 2) - 32) / 38 * safeTimemax
             s.seek(time * 6000)
             short = os.startTimer(shortspeed)
             long = os.startTimer(readspeed)
@@ -378,7 +403,15 @@ local function basemain()
             local maxpos = s.getSize()
             local curpos = s.getPosition()
             local timemax = math.floor(maxpos / 6000)
+            local labelDuration = getDurationFromLabel(s.getLabel()) or activeTapeDuration
+            if labelDuration and labelDuration > 0 then
+                timemax = math.min(timemax, labelDuration)
+            end
+            local safeTimemax = math.max(timemax, 1)
             local curtime = math.floor(curpos / 6000)
+            if curtime > timemax then
+                curtime = timemax
+            end
             local curfstr = ("%01d:%02d"):format(curtime / 60, curtime % 60)
             local maxfstr = ("%01d:%02d"):format(timemax / 60, timemax % 60)
             if label then
@@ -388,8 +421,8 @@ local function basemain()
                     8,
                     12,
                     2.5,
-                    curtime + 1,
-                    timemax,
+                    math.min(curtime + 1, safeTimemax),
+                    safeTimemax,
                     "gray",
                     "cyan",
                     "black",
