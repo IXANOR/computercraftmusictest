@@ -9,7 +9,7 @@ local folder = args[1]
 local num = tonumber(args[2]) or 1
 local label = folder:gsub("/+$", ""):match("([^/]+)$") or folder
 
-local base = "https://raw.githubusercontent.com/IXANOR/computercraftmusictest/main/"
+local base = "https://raw.githubusercontent.com/IXANOR/computercraftmusictest/main/music/"
 local url = base .. folder .. "/" .. num .. ".dfpwm"
 local tmp = "temp.dfpwm"
 
