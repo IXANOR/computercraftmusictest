@@ -383,12 +383,12 @@ function actions(disk, position)
     while true do
         local click = b.timetouch(1, mname)
         m.setBackgroundColor(colors.red)
-        if b.button(mname, click, 26, 18, "EXIT") then
+        if b.button(mname, click, 56, 19, "EXIT") then
             setup()
             break
         end
         m.setBackgroundColor(colors.orange)
-        if b.button(mname, click, 34, 17, "WIPE TAPE") then
+        if b.button(mname, click, 24, 17, "WIPE TAPE") then
             if confirmAction("WIPE TAPE") then
                 cleartape(disk, position)
                 setup()
@@ -396,7 +396,7 @@ function actions(disk, position)
             end
         end
         m.setBackgroundColor(colors.orange)
-        if b.button(mname, click, 32, 18, "DOWNLOAD SONG") then
+        if b.button(mname, click, 38, 17, "DOWNLOAD SONG") then
             if confirmAction("DOWNLOAD SONG") then
                 downloadtape(disk, position)
                 setup()
@@ -406,13 +406,13 @@ function actions(disk, position)
             end
         end
         m.setBackgroundColor(colors.green)
-        if b.button(mname, click, 36, 20, "      PLAY      ") then
+        if b.button(mname, click, 36, 22, "      PLAY      ") then
             playtape(disk, position)
             setup()
             break
         end
         m.setBackgroundColor(colors.green)
-        if b.button(mname, click, 47, 18, "NAME TAPE") then
+        if b.button(mname, click, 24, 19, "NAME TAPE") then
             if confirmAction("NAME TAPE") then
                 setTape(disk, position)
                 setup()
@@ -420,7 +420,7 @@ function actions(disk, position)
             end
         end
         m.setBackgroundColor(colors.green)
-        if b.button(mname, click, 46, 19, "SET LENGTH") then
+        if b.button(mname, click, 38, 19, "SET LENGTH") then
             if confirmAction("SET LENGTH") then
                 setTapeDuration(disk, position)
                 setup()
@@ -428,7 +428,7 @@ function actions(disk, position)
             end
         end
         m.setBackgroundColor(colors.orange)
-        if b.button(mname, click, 34, 19, "LOAD FILE") then
+        if b.button(mname, click, 56, 17, "LOAD FILE") then
             if confirmAction("LOAD FILE") then
                 loadtape(disk, position)
                 setup()
