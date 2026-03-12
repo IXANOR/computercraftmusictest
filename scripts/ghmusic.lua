@@ -7,6 +7,7 @@ end
 
 local folder = args[1]
 local num = tonumber(args[2]) or 1
+local label = folder:gsub("/+$", ""):match("([^/]+)$") or folder
 
 local base = "https://raw.githubusercontent.com/IXANOR/computercraftmusictest/main/"
 local url = base .. folder .. "/" .. num .. ".dfpwm"
@@ -48,6 +49,9 @@ end
 
 file.close()
 
+drive.seek(-drive.getSize())
+drive.setLabel(label)
+
 fs.delete(tmp)
 
-print("Gotowe.")
+print("Gotowe. Ustawiono nazwe kasety: " .. label)
