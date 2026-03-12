@@ -1,4 +1,4 @@
--------PlayH music player program by 9551 Dev-------
+-------PlayHAdvanced music player program by KamilŚlimak-------
 -----------configuration------------
 local infoscreens = {
 	--example: ["top"] = true,
@@ -13,6 +13,7 @@ local chesttype = "minecraft:chest" --the type of chest used by the system. usef
 local updaterate = 1 --rate to update screen/click lower = smoother sytem but worse click detection high = good click detection but less smooth screen
 local readspeed = 5 --speed to read contets of chest (min 5) if this is below 5 system and timers are go break
 local breaktimerafterPlay = false --if this is true then playlist wont get updated while tape is inserted
+local tapeMetadataFile = "./musicdata/tape_metadata"
 ------------------------------------
 
 print("if you have multiple monitors dont forget to select info screens!")
@@ -25,7 +26,7 @@ if arg then
     return
 end
 if not fs.exists("button") then
-    shell.run("pastebin get LTDZZZEJ ./button") --API by 9551 Dev
+    shell.run("pastebin get LTDZZZEJ ./button") --API by KamilŚlimak
 end
 if not fs.exists("bigfont") then
     shell.run("pastebin get 3LfWxRWh ./bigfont") --API by Wojbie
@@ -46,6 +47,78 @@ local s = peripheral.find("tape_drive")
 local c = peripheral.find(chesttype)
 local start = false
 local maxname = "00000000000"
+local tapeDurations = {}
+local activeTapeDuration = nil
+local activeTapeSlot = nil
+local activeTapeLabel = nil
+local function normalizeTapeLabel(label)
+    if not label or label == "" then
+        return "UnTitled"
+    end
+    return label
+end
+local function loadTapeDurations()
+    if not fs.exists(tapeMetadataFile) then
+        tapeDurations = {}
+        return
+    end
+    local file = fs.open(tapeMetadataFile, "r")
+    if not file then
+        tapeDurations = {}
+        return
+    end
+    local raw = file.readAll()
+    file.close()
+    local parsed = textutils.unserialize(raw)
+    if type(parsed) == "table" then
+        tapeDurations = parsed
+    else
+        tapeDurations = {}
+    end
+end
+local function saveTapeDurations()
+    local file = fs.open(tapeMetadataFile, "w")
+    if not file then
+        return
+    end
+    file.write(textutils.serialize(tapeDurations))
+    file.close()
+end
+local function parseDurationInput(input)
+    if not input or input == "" then
+        return nil
+    end
+    local mm, ss = input:match("^(%d+):(%d+)$")
+    if mm and ss then
+        mm = tonumber(mm)
+        ss = tonumber(ss)
+        if mm and ss and ss >= 0 and ss < 60 then
+            return mm * 60 + ss
+        end
+    end
+    local seconds = tonumber(input)
+    if seconds and seconds > 0 then
+        return math.floor(seconds)
+    end
+    return nil
+end
+local function getCurrentTapeDuration()
+    local label = normalizeTapeLabel(s.getLabel())
+    local duration = tapeDurations[label]
+    if type(duration) == "number" and duration > 0 then
+        return duration
+    end
+    return nil
+end
+local function advanceToNextTape()
+    s.seek(-s.getSize())
+    moveOut()
+    moveIn(1)
+    s.seek(-s.getSize())
+    b.sliderHor("setdb", 2, 32)
+    sortchest(c)
+    activeTapeLabel = nil
+end
 ---periph check---
 if not m then
     error("you are missing a monitor", 0)
@@ -57,6 +130,7 @@ if not c then
     error("you are missing a chest", 0)
 end
 local mname = peripheral.getName(m)
+loadTapeDurations()
 ---periph check*---
 
 -----vars*-----
@@ -66,10 +140,10 @@ m.setTextColor(colors.white)
 m.setTextScale(0.5)
 b.frame(mname, 5, 17, 71, 10, "white", "blue")
 m.setBackgroundColor(colors.blue)
-bf.writeOn(m, 2, "PlayH", nil, 10)
+bf.writeOn(m, 2, "PlayHAdvanced", nil, 10)
 m.setTextColor(colors.black)
 bf.writeOn(m, 1, "Music player program", 10, 19)
-bf.writeOn(m, 1, "by 9551 DEV", nil, 22)
+bf.writeOn(m, 1, "by KamilŚlimak", nil, 22)
 bf.writeOn(m, 1, "loading", 1, 2)
 ----------base functions----------
 local funcs = {}
@@ -77,7 +151,7 @@ local function setup()
     m.setCursorPos(1, 37)
     m.write(string.rep("\140", 100))
     m.setCursorPos(1, 38)
-    m.write("\169" .. " PlayH | copyright 2021/2022   9551 DEV")
+    m.write("\169" .. " PlayHAdvanced | copyright 2137   KamilŚlimak")
     b.frame(mname, 3, 19, 75, 17, "white", "black")
     b.frame(mname, 6, 20, 20, 15, "white", "blue")
     b.frame(mname, 30, 20, 45, 15, "white", "blue")
@@ -100,12 +174,7 @@ local function basemain()
         end
         if b.switch(mname, 2, click, 17, 4, "red", "green", "white", "shuffle") then
             if s.isEnd() then
-                s.seek(-s.getSize())
-                moveOut()
-                moveIn(1)
-                s.seek(-s.getSize())
-				b.sliderHor("setdb",2,32)
-                sortchest(c)
+                advanceToNextTape()
             end
             moveIn(1)
         end
@@ -307,6 +376,12 @@ function actions(disk, position)
             setup()
             break
         end
+        m.setBackgroundColor(colors.lightBlue)
+        if b.button(mname, click, 46, 19, "SET LENGTH") then
+            setTapeDuration(disk, position)
+            setup()
+            break
+        end
         m.setBackgroundColor(colors.orange)
         if b.button(mname, click, 34, 19, "LOAD FILE") then
             loadtape(disk, position)
@@ -498,6 +573,36 @@ function setTape(disk, position)
     end
     s.setLabel(ins)
     moveOut()
+    term.clear()
+    term.setCursorPos(1, 1)
+end
+
+function setTapeDuration(disk, position)
+    b.frame(mname, 3, 19, 75, 17, "white", "blue")
+    bf.writeOn(m, 1, "continue in terminal")
+    term.clear()
+    term.setCursorPos(1, 1)
+    local label = normalizeTapeLabel(disk)
+    print("Set song duration for tape label: " .. label)
+    print("Enter seconds (e.g. 215) or mm:ss (e.g. 3:35)")
+    print("Leave empty to remove metadata.")
+    local input = read()
+    if input == "" then
+        tapeDurations[label] = nil
+        saveTapeDurations()
+        print("Duration metadata removed.")
+    else
+        local seconds = parseDurationInput(input)
+        if seconds then
+            tapeDurations[label] = seconds
+            saveTapeDurations()
+            local mstr = ("%02d:%02d"):format(math.floor(seconds / 60), seconds % 60)
+            print("Saved duration: " .. mstr .. " (" .. seconds .. "s)")
+        else
+            print("Invalid format. Metadata was not changed.")
+        end
+    end
+    sleep(1.5)
     term.clear()
     term.setCursorPos(1, 1)
 end
@@ -695,6 +800,23 @@ local function timers()
             end
         end
         parallel.waitForAll(basemain, getClick)
+        if (not b.switch("db", 1)) and s.getState() == "PLAYING" then
+            local currentLabel = normalizeTapeLabel(s.getLabel())
+            if currentLabel ~= activeTapeLabel then
+                activeTapeLabel = currentLabel
+                activeTapeDuration = getCurrentTapeDuration()
+            end
+            if s.isEnd() then
+                advanceToNextTape()
+                activeTapeDuration = nil
+            elseif activeTapeDuration then
+                local currentSecond = math.floor(s.getPosition() / 6000)
+                if currentSecond >= activeTapeDuration then
+                    advanceToNextTape()
+                    activeTapeDuration = nil
+                end
+            end
+        end
         timers2 = timers2 + 1
         short = os.startTimer(shortspeed)
     end
@@ -722,5 +844,5 @@ if not ok then
         end
     end
     moveOut()
-    print("playH crashed reason:\n" .. err)
+    print("playHAdvanced crashed reason:\n" .. err)
 end
