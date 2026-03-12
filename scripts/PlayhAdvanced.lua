@@ -166,29 +166,30 @@ local function advanceToNextTape()
     activeTapeLabel = nil
 end
 local function advanceToPreviousTape()
-    local listBefore = c.list()
-    if not next(listBefore) then
-        s.seek(-s.getPosition())
-        return
-    end
     s.seek(-s.getSize())
     moveOut()
-    sortchest(c)
     local list = c.list()
-    local lastSlot = nil
+    local lastSlot = 0
     for i = c.size(), 1, -1 do
         if list[i] then
             lastSlot = i
             break
         end
     end
-    if lastSlot then
-        moveIn(lastSlot)
+    if lastSlot <= 0 then
+        return
+    end
+    if lastSlot == 1 then
+        moveIn(1)
+    else
+        moveIn(lastSlot - 1)
+    end
+    if s.getLabel() then
         s.seek(-s.getSize())
         b.sliderHor("setdb", 2, 32)
-        sortchest(c)
-        activeTapeLabel = nil
     end
+    sortchest(c)
+    activeTapeLabel = nil
 end
 ---periph check---
 if not m then
@@ -222,7 +223,7 @@ local function setup()
     m.setCursorPos(1, 37)
     m.write(string.rep("\140", 100))
     m.setCursorPos(1, 38)
-    m.write("\169" .. " PlayHAdvanced | copyright 2137   KamilSlimak")
+    m.write("\169" .. " PlayHAdvanced | copyright 2137/1   KamilSlimak")
     b.frame(mname, 3, 19, 75, 17, "white", "black")
     b.frame(mname, 6, 20, 20, 15, "white", "blue")
     b.frame(mname, 30, 20, 45, 15, "white", "blue")
