@@ -164,7 +164,7 @@ local function setup()
     m.setCursorPos(1, 37)
     m.write(string.rep("\140", 100))
     m.setCursorPos(1, 38)
-    m.write("\169" .. " PlayHAdvanced | copyright 2137   KamilSlimak")
+    m.write("\169" .. " PlayHAdvanced | copyright 2138   KamilSlimak")
     b.frame(mname, 3, 19, 75, 17, "white", "black")
     b.frame(mname, 6, 20, 20, 15, "white", "blue")
     b.frame(mname, 30, 20, 45, 15, "white", "blue")
@@ -872,15 +872,17 @@ local function timers()
         end
         parallel.waitForAll(basemain, getClick)
         if (not b.switch("db", 1)) then
+            local state = s.getState()
+            local shouldHandleAutoNext = (state == "PLAYING") or s.isEnd()
             local currentLabel = normalizeTapeLabel(s.getLabel())
             if currentLabel ~= activeTapeLabel then
                 activeTapeLabel = currentLabel
                 activeTapeDuration = getCurrentTapeDuration()
             end
-            if b.switch("db", 3) and s.isEnd() then
+            if shouldHandleAutoNext and s.isEnd() then
                 advanceToNextTape()
                 activeTapeDuration = nil
-            elseif b.switch("db", 3) and activeTapeDuration then
+            elseif shouldHandleAutoNext and activeTapeDuration then
                 local currentSecond = math.floor(s.getPosition() / 6000)
                 if currentSecond >= activeTapeDuration then
                     advanceToNextTape()
